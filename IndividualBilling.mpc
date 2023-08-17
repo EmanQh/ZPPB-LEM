@@ -1,0 +1,61 @@
+#program.use_edabit(True)
+program.use_trunc_pr = True
+NumberOfUsers = 5000
+print_ln('Please enter the smart meter reading then the trading amount, 1 for a prosumer or 0 for a consumer, ')
+
+UsersTupples = Matrix(4, 5001, sint)
+
+@for_range_opt(1667) # number of users per party
+def _(x):
+  @for_range_opt(3)
+  def _(i):
+      for j in range(3):
+          UsersTupples[i][j+(3*x)] = sint.get_input_from(j)
+
+# Compute individuals deviations, find and reveal total deviation
+# Compute and reveal number of prosumers and consumers
+Ind_Deviation = Array(NumberOfUsers, sint)
+Total = sint(0)
+Total_Prosumers = sint(0)
+Total_Consumers = sint(0)
+
+@for_range(NumberOfUsers)
+def f(i):
+    global Total_Prosumers
+    global Total_Consumers
+    Ind_Deviation[i] =  UsersTupples[0][i] - UsersTupples[1][i]
+    Total_Prosumers+=UsersTupples[2][i]
+    Total_Consumers+=(1-UsersTupples[2][i])
+Total_Deviation = sum(Ind_Deviation).reveal()
+NumberOfConsumers =   Total_Consumers.reveal()
+NumberOfProsumers =   Total_Prosumers.reveal()
+print_ln('Total deviation is %s',Total_Deviation)
+print_ln('Number consumers is %s',Total_Consumers.reveal())
+print_ln('Number of prosumers is %s',Total_Prosumers.reveal())
+
+
+# 1- Check whether Total_Deviation is positive or negative and calculate deviation share
+# 2- Calculate individuals bills
+
+# TP: Trading Price, PNF: Energy production network fee, CNF: Energy consumption network fee, FIT: Feed-in-Tarrif, RP: retail price
+TP,PNF,CNF,FIT,RP = 10, 5, 4 , 6, 9
+Bill = Array(NumberOfUsers, sint)
+@for_range(NumberOfUsers)
+def f(i):
+  #Basic bills
+  Bill[i] = UsersTupples[0][i] * (TP + (-PNF * UsersTupples[2][i]) + (CNF * (1-UsersTupples[2][i])))
+  @if_e(Total_Deviation >0)
+  def _():
+    global NumberOfProsumers, Total_Deviation
+    DeviationsShare = cint(Total_Deviation) / cint(NumberOfProsumers)
+    # Deviation cost if the user is a prosumer and his individual deviation is positive
+    Bill[i]+= DeviationsShare * (FIT - TP) * (Ind_Deviation[i] > 0) * UsersTupples[2][i]
+
+  @else_
+  def _():
+    @if_(Total_Deviation <0)
+    def _():
+      global NumberOfConsumers, Total_Deviation
+      DeviationsShare = cint(Total_Deviation) / cint(NumberOfConsumers)
+      # Deviation cost if the user is a consumer and his individual deviation is negative
+      Bill[i]+=  DeviationsShare * (RP - TP) * (Ind_Deviation[i] < 0 ) * (1-UsersTupples[2][i])

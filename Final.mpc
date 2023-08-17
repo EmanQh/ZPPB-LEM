@@ -1,0 +1,153 @@
+# program.use_edabit(True)
+program.use_trunc_pr = True
+
+print_ln('Please enter the smart meter reading then the trading amount, 1 for a prosumer or 0 for a consumer, ')
+NumberOfUsers=3000
+UsersTupples = Matrix(3, 3000, sint)
+
+# Use this if we need to protect the zones to which the user belongs
+#Users_Zones = Matrix(4,NumberOfUsers, regint)
+Users_Zones = Array(NumberOfUsers, regint)
+
+# Read users' data
+@for_range_opt(1000) # Number of users per party
+def _(x):
+  @for_range_opt(3)  # Number of computing parties
+  def _(i):
+      for j in range(3):
+          UsersTupples[i][j+(3*x)] = sint.get_input_from(j)
+
+# Setting users zones. We assume 4 zones [0,1,2,3]
+@for_range_opt(NumberOfUsers)
+def _(i):
+  #Users_Zones[regint.get_random(2)][i] =  1
+  @if_e(i<int(NumberOfUsers/4))
+  def _():
+    Users_Zones[i] =  0
+  @else_
+  def _():
+    @if_e(i<int(NumberOfUsers/2))
+    def _():
+      Users_Zones[i] =  1
+    @else_
+    def _():
+      @if_e(i<int(NumberOfUsers/4*3))
+      def _():
+        Users_Zones[i] =  2
+      @else_
+      def _():
+          Users_Zones[i] =  3
+
+ZonesDeviations = Matrix(4,NumberOfUsers,sint)
+ZonesInfo=Matrix(3,4,sint) #[0][0] stores total deviations of zoneA, [1][0] store total prosumers of zoneA, [2][0] store total consumers of zoneA
+ClearZonesInfo=Matrix(3,4,regint)
+
+# Compute individuals deviations of users in each of the four zones
+# and compute total deviations, total number of consumers and prosumers for each zone
+def ZoneInfo(zoneNum):
+  @for_range(NumberOfUsers)
+  def f(i):
+      # use this way to protect the zones , (i.e, zones are also shares)
+      # loop through the zones j= 0 to 3
+      # ZonesDeviations[j][i]=(UsersTupples[j][i] - UsersTupples[j][i]) *  (Users_Zones[j][i]) ...
+      @if_(Users_Zones[i] ==zoneNum)
+      def _():
+        ZonesDeviations[zoneNum][i]=UsersTupples[0][i] - UsersTupples[1][i]
+        ZonesInfo[0][zoneNum]+=ZonesDeviations[zoneNum][i]
+        ZonesInfo[1][zoneNum]+=UsersTupples[2][i]
+        ZonesInfo[2][zoneNum]+=(1-UsersTupples[2][i])
+ZoneInfo(0)
+ZoneInfo(1)
+ZoneInfo(2)
+ZoneInfo(3)
+
+#Revealing the results
+Total_Deviation = sum(ZonesInfo[0]).reveal()
+NumberOfProsumers = sum(ZonesInfo[1]).reveal()
+NumberOfConsumers =   sum(ZonesInfo[2]).reveal()
+
+# Revealing in sequence (instead of loop) would reduce the rounds of interactions
+ClearZonesInfo[0][0] = ZonesInfo[0][0].reveal()
+ClearZonesInfo[1][0] = ZonesInfo[1][0].reveal()
+ClearZonesInfo[2][0] = ZonesInfo[2][0].reveal()
+ClearZonesInfo[0][1] = ZonesInfo[0][1].reveal()
+ClearZonesInfo[1][1] = ZonesInfo[1][1].reveal()
+ClearZonesInfo[2][1] = ZonesInfo[2][1].reveal()
+ClearZonesInfo[0][2] = ZonesInfo[0][2].reveal()
+ClearZonesInfo[1][2] = ZonesInfo[1][2].reveal()
+ClearZonesInfo[2][2] = ZonesInfo[2][2].reveal()
+ClearZonesInfo[0][3] = ZonesInfo[0][3].reveal()
+ClearZonesInfo[1][3] = ZonesInfo[1][3].reveal()
+ClearZonesInfo[2][3] = ZonesInfo[2][3].reveal()
+
+print_ln('Total deviation is %s',Total_Deviation)
+print_ln('Number of consumers is %s',NumberOfConsumers)
+print_ln('Number of prosumers is %s',NumberOfProsumers)
+
+TotalOversupplyingZonesDeviations,TotalUndersupplyingZonesDeviations,ZonalDeviationWeight = regint(0),regint(0),regint(0)
+
+# Calculate zonal deviationWeight
+# This computation is in clear
+@if_e(Total_Deviation >0)
+def _():
+  @for_range(4)
+  def f(j):
+    print_ln('Zone %s deviation is %s',j,ClearZonesInfo[0][j])
+    @if_(ClearZonesInfo[0][j] >0) # check if the total deviations of the zone is positive
+    def _():
+      global TotalOversupplyingZonesDeviations
+      TotalOversupplyingZonesDeviations+=ClearZonesInfo[0][j]
+  print_ln('Total of oversupplying zones deviations is %s',TotalOversupplyingZonesDeviations)
+  @if_(TotalOversupplyingZonesDeviations) #check that it is not equal to zero
+  def _():
+    global ZonalDeviationWeight
+    ZonalDeviationWeight= Total_Deviation/TotalOversupplyingZonesDeviations
+    print_ln('Deviation weight is %s', ZonalDeviationWeight)
+@else_
+def _():
+ @if_(Total_Deviation <0)
+ def _():
+   @for_range(3)
+   def f(j):
+     @if_(ClearZonesInfo[0][j]<0) # check if the total deviations of the zone is negative
+     def _():
+       global TotalUndersupplyingZonesDeviations
+       TotalUndersupplyingZonesDeviations+=ClearZonesInfo[0][j]
+   print_ln('Total of undersupplying zones deviations is %s',TotalUndersupplyingZonesDeviations)
+   @if_(TotalUndersupplyingZonesDeviations)
+   def _():
+       global ZonalDeviationWeight
+       ZonalDeviationWeight= Total_Deviation/TotalUndersupplyingZonesDeviations
+       print_ln(ZonalDeviationWeight)
+
+
+# Compute individual consumers bills and prosumers income while protecting individual deviations and meter readings
+# TP: Trading Price, PNF: Energy production network fee, CNF: Energy consumption network fee, FIT: Feed-in-Tarrif, RP: retail price
+TP,PNF,CNF,FIT,RP = 250, 1, 1 , 200, 300 #300 pounds per Watt is the average retail price in UK
+Bill = Array(NumberOfUsers, sint)
+@for_range(NumberOfUsers)
+def f(i):
+  #Basic bills
+  Bill[i] = UsersTupples[0][i] * (TP + (-PNF * UsersTupples[2][i]) + (CNF * (1-UsersTupples[2][i])))
+  @if_e(Total_Deviation >0)
+  def _():
+    global ZonalDeviationWeight
+    # Check if the user belongs to a zone with a positive deviation
+    @if_(ClearZonesInfo[0][Users_Zones[i]]>0)
+    def _():
+      # Compute individual deviation cost if user is a prosumer and his individual deviation is positive and modify the bill accordingly
+      # (ClearZonesInfo[0][Users_Zones[i]] * ZonalDeviationWeight/ClearZonesInfo[1][Users_Zones[i]]) is the zone deviation share
+      Bill[i]+= (ClearZonesInfo[0][Users_Zones[i]] * ZonalDeviationWeight/ClearZonesInfo[1][Users_Zones[i]]) * (FIT - TP) * (ZonesDeviations[Users_Zones[i]][i] > 0) * UsersTupples[2][i]
+      # If we need to protect the zone, then it is going to be something like:
+      # 1- loop j= 0 to 3 (for zones )
+      # 2- multiply the equation by (ZonesDeviations[Users_Zones[i]][i] > 0)
+  @else_
+  def _():
+    global ZonalDeviationWeight
+    @if_(Total_Deviation <0)
+    def _():
+        # check if the user belongs to a zone with a negative deviation
+        @if_(ClearZonesInfo[0][Users_Zones[i]]<0)
+        def _():
+          # Compute deviation cost if the user is a consumer and its individual deviation is negative and modify the bill accordingly
+          Bill[i]+=  (ClearZonesInfo[0][Users_Zones[i]] * ZonalDeviationWeight/ClearZonesInfo[2][Users_Zones[i]]) * (RP - TP) * (ZonesDeviations[Users_Zones[i]][i]< 0 ) * (1-UsersTupples[2][i])
