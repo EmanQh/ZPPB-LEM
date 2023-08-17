@@ -1,4 +1,6 @@
-# Zone-Based Privacy-Preserving Billing for Local Energy Market
+# MPC Implementation of Privacy-Preserving Billing for Local Energy Market 
+This is an implementation of Zone-Based Privacy-Preserving Billing for Local Energy Market Based on Multiparty Computation Proposed in [arXiv:2307.08778]. 
 
++ Download and unpack Multi-Protocol SPDZ [https://github.com/data61/MP-SPDZ/releases], then copy Billing.mpc and ZoneBasedBilling.mpc files to Programs/Source.
 
-
++ Follow the instructions in [https://github.com/data61/MP-SPDZ] to run the files using any of the protocols supported by MP-SPDZ software. 
