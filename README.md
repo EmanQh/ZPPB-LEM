@@ -1,6 +1,4 @@
-# Welcome to GitHub Desktop!
+# Zone-Based Privacy-Preserving Billing for Local Energy Market
 
-This is your README. READMEs are where you can communicate what your project is and how to use it.
 
-Write your name on line 6, save it, and then head back to GitHub Desktop.
-TEST
+
