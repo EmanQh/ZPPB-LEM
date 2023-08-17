@@ -3,4 +3,4 @@ This is an implementation of Zone-Based Privacy-Preserving Billing for Local Ene
 
 + Download and unpack [Multi-Protocol SPDZ](https://github.com/data61/MP-SPDZ/releases), then copy Billing.mpc and ZoneBasedBilling.mpc files to Programs/Source.
 
-+ Follow the instructions in [MP-SPDZ Documentation]([https://github.com/data61/MP-SPDZ)](https://mp-spdz.readthedocs.io) to run the files using any of the protocols supported by MP-SPDZ software. 
++ Follow the instructions in [MP-SPDZ Documentation](https://github.com/data61/MP-SPDZ)](https://mp-spdz.readthedocs.io) to run the files using any of the protocols supported by MP-SPDZ software. 
