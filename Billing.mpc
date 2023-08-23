@@ -1,11 +1,11 @@
 #program.use_edabit(True)
 program.use_trunc_pr = True
-NumberOfUsers = 5000
+NumberOfUsers = 3000
 print_ln('Please enter the smart meter reading then the trading amount, 1 for a prosumer or 0 for a consumer, ')
 
-UsersTupples = Matrix(4, 5001, sint)
+UsersTupples = Matrix(3, 3000, sint)
 
-@for_range_opt(1667) # number of users per party
+@for_range_opt(1000) # number of users per party
 def _(x):
   @for_range_opt(3)
   def _(i):
