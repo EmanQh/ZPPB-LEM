@@ -1,12 +1,13 @@
 #program.use_edabit(True)
+#The code has been tested for 3 computing parties
 program.use_trunc_pr = True
-NumberOfUsers = 3000
 print_ln('Please enter the smart meter reading then the trading amount, 1 for a prosumer or 0 for a consumer, ')
 
-UsersTupples = Matrix(3, 3000, sint)
+NumberOfUsers = 3000 #Change this value to test a different number of users (e.g., NumberOfUsers=1000).This value should be less than or equal the value of 'y' explained below
+UsersTupples = Matrix(3, 3000, sint) # The value of the middle parameter 'y' should be set as follows: y= x * 3 (e.g., y= 334 * 3 = 1002)
 
-@for_range_opt(1000) # number of users per party
-def _(x):
+@for_range_opt(1000) # Exit condition 'x' is the number of users per party (here it is 1000)
+def _(x):            # Change x value according to the NumberOfUsers you want to test (e.g., x= 334).
   @for_range_opt(3)
   def _(i):
       for j in range(3):
