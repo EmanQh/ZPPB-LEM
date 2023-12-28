@@ -1,8 +1,8 @@
-# program.use_edabit(True)
+# For Protocol 2, approach 2
 #The code has been tested for 3 computing parties
 program.use_trunc_pr = True
 
-print_ln('Please enter the smart meter reading then the trading amount, 1 for a prosumer or 0 for a consumer, ')
+print_ln('Please enter the smart meter reading then the trading amount, 1 for a prosumer or 0 for a consumer ')
 NumberOfUsers=3000 #Change this value to test a different number of users (e.g., NumberOfUsers=1000).This value should be less than or equal the value of 'y' explained bellow
 UsersTupples = Matrix(3, 3000, sint) # The value of the middle parameter 'y' should be set as follows: y= x * 3 (e.g., y= 334 * 3 = 1002)
 
