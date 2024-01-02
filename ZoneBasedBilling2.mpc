@@ -2,7 +2,7 @@
 #The code has been tested for 3 computing parties
 program.use_trunc_pr = True
 
-print_ln('Please enter the smart meter reading then the trading amount, 1 for a prosumer or 0 for a consumer ')
+print_ln('Please enter the smart meter reading then the trading amount, 1 for a prosumer or 0 for a consumer, ')
 NumberOfUsers=3000 #Change this value to test a different number of users (e.g., NumberOfUsers=1000).This value should be less than or equal the value of 'y' explained bellow
 UsersTupples = Matrix(3, 3000, sint) # The value of the middle parameter 'y' should be set as follows: y= x * 3 (e.g., y= 334 * 3 = 1002)
 
@@ -122,14 +122,12 @@ def _():
        print_ln(ZonalDeviationWeight)
 
 
-# Compute individual consumers bills and prosumers income while protecting individual deviations and meter readings
+# Compute individual deviations cost
 # TP: Trading Price, PNF: Energy production network fee, CNF: Energy consumption network fee, FIT: Feed-in-Tarrif, RP: retail price
 TP,PNF,CNF,FIT,RP = 250, 1, 1 , 200, 300 #300 pounds per Watt is the average retail price in UK
-Bill = Array(NumberOfUsers, sint)
+DevCost = Array(NumberOfUsers, sint)
 @for_range(NumberOfUsers)
 def f(i):
-  #Basic bills
-  Bill[i] = UsersTupples[0][i] * (TP + (-PNF * UsersTupples[2][i]) + (CNF * (1-UsersTupples[2][i])))
   @if_e(Total_Deviation >0)
   def _():
     global ZonalDeviationWeight
@@ -138,10 +136,8 @@ def f(i):
     def _():
       # Compute individual deviation cost if user is a prosumer and his individual deviation is positive and modify the bill accordingly
       # (ClearZonesInfo[0][Users_Zones[i]] * ZonalDeviationWeight/ClearZonesInfo[1][Users_Zones[i]]) is the zone deviation share
-      Bill[i]+= (ClearZonesInfo[0][Users_Zones[i]] * ZonalDeviationWeight/ClearZonesInfo[1][Users_Zones[i]]) * (FIT - TP) * (ZonesDeviations[Users_Zones[i]][i] > 0) * UsersTupples[2][i]
-      # If we need to protect the zone, then it is going to be something like:
-      # 1- loop j= 0 to 3 (for zones )
-      # 2- multiply the equation by (ZonesDeviations[Users_Zones[i]][i] > 0)
+      DevCost[i]= (ClearZonesInfo[0][Users_Zones[i]] * ZonalDeviationWeight/ClearZonesInfo[1][Users_Zones[i]]) * (FIT - TP) * (ZonesDeviations[Users_Zones[i]][i] > 0) * UsersTupples[2][i]
+
   @else_
   def _():
     global ZonalDeviationWeight
@@ -151,4 +147,4 @@ def f(i):
         @if_(ClearZonesInfo[0][Users_Zones[i]]<0)
         def _():
           # Compute deviation cost if the user is a consumer and its individual deviation is negative and modify the bill accordingly
-          Bill[i]+=  (ClearZonesInfo[0][Users_Zones[i]] * ZonalDeviationWeight/ClearZonesInfo[2][Users_Zones[i]]) * (RP - TP) * (ZonesDeviations[Users_Zones[i]][i]< 0 ) * (1-UsersTupples[2][i])
+          DevCost[i]=  (ClearZonesInfo[0][Users_Zones[i]] * ZonalDeviationWeight/ClearZonesInfo[2][Users_Zones[i]]) * (RP - TP) * (ZonesDeviations[Users_Zones[i]][i]< 0 ) * (1-UsersTupples[2][i])
