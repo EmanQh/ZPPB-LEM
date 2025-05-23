@@ -124,7 +124,7 @@ def _():
 
 # Compute individual consumers bills and prosumers income while protecting individual deviations and meter readings
 # TP: Trading Price, PNF: Energy production network fee, CNF: Energy consumption network fee, FIT: Feed-in-Tarrif, RP: retail price
-TP,PNF,CNF,FIT,RP = 250, 1, 1 , 200, 300 
+TP,PNF,CNF,FIT,RP = 25, 1, 1 , 20, 30
 Bill = Array(NumberOfUsers, sint)
 @for_range(NumberOfUsers)
 def f(i):
